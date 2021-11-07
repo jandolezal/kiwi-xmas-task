@@ -4,18 +4,13 @@ from datetime import datetime
 from typing import List, Dict
 
 
-@dataclass(eq=True, frozen=True)
-class Airport:
-
-    name: str
-
 
 @dataclass
 class Flight:
 
     flight_no: str
-    origin: Airport
-    destination: Airport
+    origin: str
+    destination: str
     departure: datetime
     arrival: datetime
     base_price: float
@@ -28,28 +23,18 @@ class Flight:
 
 
 @dataclass
+class Option:
+
+    transfers: List[str]
+    flights: List[Flight]
+
+
+@dataclass
 class AllFlights:
 
-    flights: Dict[Airport, List[Airport]] = field(default_factory=dict)
-
-    def add_airport(self, node):
-        if node in self.flights:
-            raise ValueError('Duplicate airport')
-        else:
-            self.flights[node] = []
+    airports: List[str] = field(default_factory=list)
+    flights: Dict[str, List[Flight]] = field(default_factory=dict)
     
-    def add_flight(self, flight):
-        if not (flight.origin in self.flights and flight.destination in self.flights):
-            raise ValueError('Airport is not in the graph.')
-        else:
-            self.flights[flight.origin].append(flight)
-    
-    def get_airport(self, name):
-        for n in self.flights:
-            if n.name == name:
-                return n
-
-
     @classmethod
     def from_csv(cls, filepath: str = 'example/example0.csv'):
 
@@ -59,32 +44,44 @@ class AllFlights:
             reader = csv.DictReader(csvf)
             data = [dict(row) for row in reader]
 
+            # Obtain list of all airports
             origins = [row['origin'] for row in data]
             destinations = [row['destination'] for row in data]
-            airport_names = list(set(origins + destinations))
+            all_flights.airports.extend(list(set(origins + destinations)))
 
-            for airport_name in airport_names:
-                all_flights.add_airport(Airport(name=airport_name))
-            
+            # Prepare a dictionary mapping from airport name to list of outgoing flights
             for row in data:
                 flight = Flight(
                     flight_no=row['flight_no'],
-                    origin=all_flights.get_airport(row['origin']),
-                    destination=all_flights.get_airport(row['destination']),
+                    origin=row['origin'],
+                    destination=row['destination'],
                     arrival=datetime.fromisoformat(row['arrival']),
                     departure=datetime.fromisoformat(row['departure']),
                     base_price=float(row['base_price']),
                     bag_price=int(row['bag_price']),
                     bags_allowed=int(row['bags_allowed']),
                 )
-                all_flights.add_flight(flight)
+                all_flights.flights.setdefault(flight.origin, []).append(flight)            
     
         return all_flights
 
 
+def find_all_options(all_flights, start: str, end: str) -> List[List[Flight]]:
+    relevant = []
+    outgoing = all_flights.flights[start]
+    
+    for out in outgoing:
+        if out.destination == end:
+            if out not in relevant:
+                relevant.append(out)
+    
+    return relevant
+
+
 def main():
     all_flights = AllFlights.from_csv()
-    print('Done')
+    relevant = find_all_options(all_flights, 'WIW', 'ECV')
+    print(relevant)
 
 
 if __name__ == '__main__':
