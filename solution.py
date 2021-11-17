@@ -92,35 +92,38 @@ def list_ok_flights(schedule, airport, incoming_route):
 
 def gather_routes(schedule, start, end, incoming_route):
     routes = []
-    # list ok flights from start airport
-    # for each ok flight
-    # check if destination is end and return updated route
-    # if not gather routes for this flight
+
     ok_flights = list_ok_flights(schedule, start, incoming_route)
+
     for ok in ok_flights:
         if ok.destination == end:
             if incoming_route:
-                updated_route = copy.copy(incoming_route)
+                updated_route = copy.deepcopy(incoming_route)
                 updated_route.flights.append(ok)
             else:
                 updated_route = Route(flights=[ok], origin=start, destination=end)
             routes.append(updated_route)
         else:
             if incoming_route:
-                updated_route = copy.copy(incoming_route)
+                updated_route = copy.deepcopy(incoming_route)
                 updated_route.flights.append(ok)
             else:
                 updated_route = Route(flights=[ok], origin=start, destination=end)
             routes.extend(gather_routes(schedule, ok.destination, end, updated_route))
+
     return routes
 
 
 def main():
-    schedule = flights_from_csv('example/example1.csv')
+    schedule = flights_from_csv('example/example3.csv')
     # start = 'WIW'
     # end = 'ECV'
-    start = 'DHE'
-    end = 'NIZ'
+    # start = 'DHE'
+    # end = 'NIZ'
+    # start = 'YOT'
+    # end = 'IUQ'
+    start = 'WUE'
+    end = 'JBN'
     routes = gather_routes(schedule, start, end, None)
     for route in routes:
         print(
@@ -129,6 +132,9 @@ def main():
             len(route.flights),
             route.visited_airports(),
         )
+
+    for flight in routes[2].flights:
+        print(flight)
 
 
 if __name__ == '__main__':
