@@ -1,3 +1,4 @@
+import argparse
 import copy
 import csv
 from dataclasses import dataclass, field, fields
@@ -52,18 +53,35 @@ class Route:
 
     def print_itinerary(self) -> None:
         print(self.origin, self.destination, len(self.flights), self.visited_airports())
-    
+
     def calculate_bags_allowed(self) -> None:
         self.bags_allowed = min(flight.bags_allowed for flight in self.flights)
-    
+
     def calculate_total_price(self) -> None:
         total_base_price = sum(flight.base_price for flight in self.flights)
-        total_bags_price = sum(flight.bag_price for flight in self.flights) * self.bags_count
+        total_bags_price = (
+            sum(flight.bag_price for flight in self.flights) * self.bags_count
+        )
         self.total_price = total_base_price + total_bags_price
-    
+
+    def calculate_travel_time(self) -> None:
+        departure = self.flights[0].departure
+        arrival = self.flights[-1].arrival
+        td = arrival - departure
+        if td.days:
+            hours = td.seconds // 3600 + td.days * 24
+        else:
+            hours = td.seconds // 3600
+        minutes = td.seconds // 60 % 60
+        seconds = td.seconds % 60
+        self.travel_time = (
+            f'{str(hours)}:{str(minutes).zfill(2)}:{str(seconds).zfill(2)}'
+        )
+
     def calculate(self) -> None:
         self.calculate_bags_allowed()
         self.calculate_total_price()
+        self.calculate_travel_time()
 
 
 def flights_from_csv(filepath: str = 'example/example0.csv') -> Dict[str, List[Flight]]:
@@ -97,13 +115,13 @@ def is_enough_time(arrival, departure):
 
 
 def calculate_travel_time(departure: datetime, arrival: datetime) -> str:
-    td = (arrival - departure)
+    td = arrival - departure
     if td.days:
-        hours = td.seconds//3600 + td.days*24
+        hours = td.seconds // 3600 + td.days * 24
     else:
-        hours = td.seconds//3600
-    minutes = td.seconds//60%60
-    seconds = td.seconds%60
+        hours = td.seconds // 3600
+    minutes = td.seconds // 60 % 60
+    seconds = td.seconds % 60
     return f'{str(hours)}:{str(minutes).zfill(2)}:{str(seconds).zfill(2)}'
 
 
@@ -144,7 +162,12 @@ def gather_routes(
                 new_route = copy.deepcopy(incoming_route)
                 new_route.add_flight(ok_flight)
             else:
-                new_route = Route(flights=[ok_flight], origin=start, destination=end, bags_count=bags_count)
+                new_route = Route(
+                    flights=[ok_flight],
+                    origin=start,
+                    destination=end,
+                    bags_count=bags_count,
+                )
             routes.append(new_route)
         # Recursive option which explores routes with the (transit) destination as new start
         else:
@@ -152,7 +175,12 @@ def gather_routes(
                 new_route = copy.deepcopy(incoming_route)
                 new_route.add_flight(ok_flight)
             else:
-                new_route = Route(flights=[ok_flight], origin=start, destination=end, bags_count=bags_count)
+                new_route = Route(
+                    flights=[ok_flight],
+                    origin=start,
+                    destination=end,
+                    bags_count=bags_count,
+                )
             routes.extend(
                 gather_routes(
                     schedule, ok_flight.destination, end, new_route, bags_count
@@ -162,27 +190,29 @@ def gather_routes(
     return routes
 
 
-def process_routes():
-    pass
-
 def main():
-    schedule = flights_from_csv('example/example3.csv')
-    # start = 'WIW'
-    # end = 'ECV'
-    # start = 'DHE'
-    # end = 'NIZ'
-    # start = 'YOT'
-    # end = 'IUQ'
-    start = 'WUE'
-    end = 'JBN'
-    routes = gather_routes(schedule, start, end, None, 1)
+    parser = argparse.ArgumentParser(
+        prog='kiwi-xmas-task',
+        description='finds all possible routes between origin and destination based on number of bags.',
+    )
+
+    parser.add_argument(
+        'filename', help='specify name of a CSV file which contains flights data.'
+    )
+    parser.add_argument('origin', help='set origin.')
+    parser.add_argument('destination', help='set destination.')
+    parser.add_argument('--bags', help='set number of bags.', type=int)
+
+    args = parser.parse_args()
+
+    schedule = flights_from_csv(args.filename)
+
+    routes = gather_routes(schedule, args.origin, args.destination, None, args.bags)
+
     for route in routes:
-        route.print_itinerary()
+        route.calculate()
 
-    print('\n')
-
-    for flight in routes[3].flights:
-        flight.print_schedule()
+    print(routes)
 
 
 if __name__ == '__main__':
