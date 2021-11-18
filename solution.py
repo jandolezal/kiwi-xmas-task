@@ -23,7 +23,7 @@ class Flight:
 
     def print_schedule(self) -> None:
         print(
-            f'{self.flight_no}: {self.origin} ({self.departure.isoformat()}) -> ({self.arrival.isoformat()}) {self.destination}'
+            f'{self.flight_no}: {self.origin} ({self.departure.isoformat()}) -> ({self.arrival.isoformat()}) {self.destination} (allowed {self.bags_allowed} bag(s))'
         )
 
 
@@ -32,7 +32,7 @@ class Route:
 
     flights: List[Flight] = field(default_factory=List)
     bags_allowed: int = None
-    bags_coount: int = None
+    bags_count: int = None
     destination: str = None
     origin: str = None
     total_price: float = None
@@ -84,27 +84,32 @@ def is_enough_time(arrival, departure):
     )
 
 
-def list_ok_flights(schedule, airport, incoming_route):
+def list_ok_flights(
+    schedule: List[Flight], airport: str, incoming_route: Route, bags_count: int
+):
     ok_flights = []
     outgoing = [flight for flight in schedule if flight.origin == airport]
     for out in outgoing:
         if incoming_route:
-            if is_enough_time(incoming_route.last_flight().arrival, out.departure) and (
-                out.destination not in incoming_route.visited_airports()
+            if (
+                is_enough_time(incoming_route.last_flight().arrival, out.departure)
+                and (out.destination not in incoming_route.visited_airports())
+                and (out.bags_allowed >= bags_count)
             ):
                 ok_flights.append(out)
         else:
-            ok_flights.append(out)
+            if out.bags_allowed >= bags_count:
+                ok_flights.append(out)
     return ok_flights
 
 
 def gather_routes(
-    schedule: List[Flight], start: str, end: str, incoming_route: Route
+    schedule: List[Flight], start: str, end: str, incoming_route: Route, bags_count: int
 ) -> List[Route]:
 
     routes = []
 
-    ok_flights = list_ok_flights(schedule, start, incoming_route)
+    ok_flights = list_ok_flights(schedule, start, incoming_route, bags_count)
 
     # One incoming route is multiplicated for each outgoing flight which is ok
     # Ok means: airport not visited, there is enough time for transfer
@@ -126,7 +131,9 @@ def gather_routes(
             else:
                 new_route = Route(flights=[ok_flight], origin=start, destination=end)
             routes.extend(
-                gather_routes(schedule, ok_flight.destination, end, new_route)
+                gather_routes(
+                    schedule, ok_flight.destination, end, new_route, bags_count
+                )
             )
 
     return routes
@@ -142,13 +149,13 @@ def main():
     # end = 'IUQ'
     start = 'WUE'
     end = 'JBN'
-    routes = gather_routes(schedule, start, end, None)
+    routes = gather_routes(schedule, start, end, None, 1)
     for route in routes:
         route.print_itinerary()
 
     print('\n')
 
-    for flight in routes[1].flights:
+    for flight in routes[3].flights:
         flight.print_schedule()
 
 
