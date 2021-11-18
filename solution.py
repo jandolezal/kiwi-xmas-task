@@ -52,6 +52,18 @@ class Route:
 
     def print_itinerary(self) -> None:
         print(self.origin, self.destination, len(self.flights), self.visited_airports())
+    
+    def calculate_bags_allowed(self) -> None:
+        self.bags_allowed = min(flight.bags_allowed for flight in self.flights)
+    
+    def calculate_total_price(self) -> None:
+        total_base_price = sum(flight.base_price for flight in self.flights)
+        total_bags_price = sum(flight.bag_price for flight in self.flights) * self.bags_count
+        self.total_price = total_base_price + total_bags_price
+    
+    def calculate(self) -> None:
+        self.calculate_bags_allowed()
+        self.calculate_total_price()
 
 
 def flights_from_csv(filepath: str = 'example/example0.csv') -> Dict[str, List[Flight]]:
@@ -82,6 +94,17 @@ def is_enough_time(arrival, departure):
     return ((departure - arrival) / timedelta(hours=1) > 1) and (
         (departure - arrival) / timedelta(hours=1) < 6
     )
+
+
+def calculate_travel_time(departure: datetime, arrival: datetime) -> str:
+    td = (arrival - departure)
+    if td.days:
+        hours = td.seconds//3600 + td.days*24
+    else:
+        hours = td.seconds//3600
+    minutes = td.seconds//60%60
+    seconds = td.seconds%60
+    return f'{str(hours)}:{str(minutes).zfill(2)}:{str(seconds).zfill(2)}'
 
 
 def list_ok_flights(
@@ -121,7 +144,7 @@ def gather_routes(
                 new_route = copy.deepcopy(incoming_route)
                 new_route.add_flight(ok_flight)
             else:
-                new_route = Route(flights=[ok_flight], origin=start, destination=end)
+                new_route = Route(flights=[ok_flight], origin=start, destination=end, bags_count=bags_count)
             routes.append(new_route)
         # Recursive option which explores routes with the (transit) destination as new start
         else:
@@ -129,7 +152,7 @@ def gather_routes(
                 new_route = copy.deepcopy(incoming_route)
                 new_route.add_flight(ok_flight)
             else:
-                new_route = Route(flights=[ok_flight], origin=start, destination=end)
+                new_route = Route(flights=[ok_flight], origin=start, destination=end, bags_count=bags_count)
             routes.extend(
                 gather_routes(
                     schedule, ok_flight.destination, end, new_route, bags_count
@@ -138,6 +161,9 @@ def gather_routes(
 
     return routes
 
+
+def process_routes():
+    pass
 
 def main():
     schedule = flights_from_csv('example/example3.csv')
