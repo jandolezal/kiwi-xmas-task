@@ -1,8 +1,10 @@
 import argparse
 import copy
 import csv
-from dataclasses import dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime, timedelta
+import json
+import sys
 from typing import List, Dict
 
 
@@ -41,9 +43,6 @@ class Route:
 
     def visited_airports(self) -> List[str]:
         return [flight.origin for flight in self.flights]
-
-    def reached_destination(self) -> bool:
-        return self.last_flight().destination == self.destination
 
     def last_flight(self) -> Flight:
         return self.flights[-1]
@@ -203,16 +202,32 @@ def main():
     parser.add_argument('destination', help='set destination.')
     parser.add_argument('--bags', help='set number of bags.', type=int)
 
+    # Gather arguments for the search
     args = parser.parse_args()
+    try:
+        schedule = flights_from_csv(args.filename)
+    except FileNotFoundError as err:
+        print(err)
+        sys.exit()
+    if len(args.origin) != 3 or len(args.destination) != 3:
+        print('Origin and destination should be tree letter codes.')
+        sys.exit()
+    routes = gather_routes(
+        schedule, args.origin.upper(), args.destination.upper(), None, args.bags
+    )
 
-    schedule = flights_from_csv(args.filename)
+    # Calculate travel_time, total_price and bags_allowed
+    if routes:
+        for route in routes:
+            route.calculate()
 
-    routes = gather_routes(schedule, args.origin, args.destination, None, args.bags)
-
-    for route in routes:
-        route.calculate()
-
-    print(routes)
+        # Convert each Route to dict and dump json
+        routes = [asdict(route) for route in routes]
+        print(json.dumps(routes, default=str, indent=4))
+    else:
+        print(
+            f'There are no options for journey from {args.origin} to {args.destination}'
+        )
 
 
 if __name__ == '__main__':
