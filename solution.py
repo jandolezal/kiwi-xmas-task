@@ -2,7 +2,7 @@ import copy
 import csv
 from dataclasses import dataclass, field, fields
 from datetime import datetime, timedelta
-from typing import List, Dict, Set
+from typing import List, Dict
 
 
 @dataclass
@@ -20,6 +20,11 @@ class Flight:
     @classmethod
     def get_fieldnames(cls) -> list:
         return [field.name for field in fields(cls)]
+
+    def print_schedule(self) -> None:
+        print(
+            f'{self.flight_no}: {self.origin} ({self.departure.isoformat()}) -> ({self.arrival.isoformat()}) {self.destination}'
+        )
 
 
 @dataclass
@@ -42,8 +47,11 @@ class Route:
     def last_flight(self) -> Flight:
         return self.flights[-1]
 
-    def update_route(self, flight: Flight):
+    def add_flight(self, flight: Flight) -> None:
         self.flights.append(flight)
+
+    def print_itinerary(self) -> None:
+        print(self.origin, self.destination, len(self.flights), self.visited_airports())
 
 
 def flights_from_csv(filepath: str = 'example/example0.csv') -> Dict[str, List[Flight]]:
@@ -90,26 +98,36 @@ def list_ok_flights(schedule, airport, incoming_route):
     return ok_flights
 
 
-def gather_routes(schedule, start, end, incoming_route):
+def gather_routes(
+    schedule: List[Flight], start: str, end: str, incoming_route: Route
+) -> List[Route]:
+
     routes = []
 
     ok_flights = list_ok_flights(schedule, start, incoming_route)
 
-    for ok in ok_flights:
-        if ok.destination == end:
+    # One incoming route is multiplicated for each outgoing flight which is ok
+    # Ok means: airport not visited, there is enough time for transfer
+    for ok_flight in ok_flights:
+        # This is the base condition. We reached the final destination.
+        if ok_flight.destination == end:
+            # First ever call of this function does not have incoming route
             if incoming_route:
-                updated_route = copy.deepcopy(incoming_route)
-                updated_route.flights.append(ok)
+                new_route = copy.deepcopy(incoming_route)
+                new_route.add_flight(ok_flight)
             else:
-                updated_route = Route(flights=[ok], origin=start, destination=end)
-            routes.append(updated_route)
+                new_route = Route(flights=[ok_flight], origin=start, destination=end)
+            routes.append(new_route)
+        # Recursive option which explores routes with the (transit) destination as new start
         else:
             if incoming_route:
-                updated_route = copy.deepcopy(incoming_route)
-                updated_route.flights.append(ok)
+                new_route = copy.deepcopy(incoming_route)
+                new_route.add_flight(ok_flight)
             else:
-                updated_route = Route(flights=[ok], origin=start, destination=end)
-            routes.extend(gather_routes(schedule, ok.destination, end, updated_route))
+                new_route = Route(flights=[ok_flight], origin=start, destination=end)
+            routes.extend(
+                gather_routes(schedule, ok_flight.destination, end, new_route)
+            )
 
     return routes
 
@@ -126,15 +144,12 @@ def main():
     end = 'JBN'
     routes = gather_routes(schedule, start, end, None)
     for route in routes:
-        print(
-            route.origin,
-            route.destination,
-            len(route.flights),
-            route.visited_airports(),
-        )
+        route.print_itinerary()
 
-    for flight in routes[2].flights:
-        print(flight)
+    print('\n')
+
+    for flight in routes[1].flights:
+        flight.print_schedule()
 
 
 if __name__ == '__main__':
