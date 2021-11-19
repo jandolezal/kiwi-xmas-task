@@ -5,8 +5,7 @@ from solution import (
     Flight,
     flights_from_csv,
     is_enough_time,
-    is_enough_time,
-    calculate_travel_time,
+    Route,
 )
 import solution
 
@@ -41,7 +40,7 @@ class TestSolution(unittest.TestCase):
         destination='REJ',
         origin='BTW',
         # total_price=110.0,
-        travel_time='6:55:00',
+        # travel_time='6:55:00',
     )
 
     def test_is_enough_time_more_than_6_hours(self):
@@ -133,24 +132,6 @@ class TestSolution(unittest.TestCase):
         )
         self.assertIn(some_flight, flights)
 
-    def test_calculate_travel_time_btw_rej_with_transfer(self):
-        departure = datetime.datetime(2021, 9, 2, 5, 50)
-        arrival = datetime.datetime(2021, 9, 2, 12, 45)
-        travel_time = calculate_travel_time(departure, arrival)
-        self.assertEqual(travel_time, '6:55:00')
-
-    def test_calculate_travel_time_btw_rej(self):
-        departure = datetime.datetime(2021, 9, 1, 17, 35)
-        arrival = datetime.datetime(2021, 9, 1, 21, 5)
-        travel_time = calculate_travel_time(departure, arrival)
-        self.assertEqual(travel_time, '3:30:00')
-
-    def test_calculate_travel_time_btw_rej_days_travel_time(self):
-        departure = datetime.datetime(2021, 9, 1, 17, 35)
-        arrival = datetime.datetime(2021, 9, 2, 18, 40)
-        travel_time = calculate_travel_time(departure, arrival)
-        self.assertEqual(travel_time, '25:05:00')
-
     def test_calculate_bags_allowed(self):
         self.assertEqual(self.test_route.bags_allowed, None)
         calculated_bags_allowed = self.test_route.calculate_bags_allowed()
@@ -158,8 +139,13 @@ class TestSolution(unittest.TestCase):
 
     def test_calculate_total_price(self):
         self.assertEqual(self.test_route.total_price, None)
-        calculated_bags_allowed = self.test_route.calculate_total_price()
+        calculated_total_price = self.test_route.calculate_total_price()
         self.assertEqual(self.test_route.total_price, 110.0)
+
+    def test_calculate_travel_time(self):
+        self.assertEqual(self.test_route.travel_time, None)
+        calculated_travel_time = self.test_route.calculate_travel_time()
+        self.assertEqual(self.test_route.travel_time, '6:55:00')
 
 
 if __name__ == '__main__':

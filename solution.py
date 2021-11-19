@@ -113,17 +113,6 @@ def is_enough_time(arrival, departure):
     )
 
 
-def calculate_travel_time(departure: datetime, arrival: datetime) -> str:
-    td = arrival - departure
-    if td.days:
-        hours = td.seconds // 3600 + td.days * 24
-    else:
-        hours = td.seconds // 3600
-    minutes = td.seconds // 60 % 60
-    seconds = td.seconds % 60
-    return f'{str(hours)}:{str(minutes).zfill(2)}:{str(seconds).zfill(2)}'
-
-
 def list_ok_flights(
     schedule: List[Flight], airport: str, incoming_route: Route, bags_count: int
 ):
@@ -200,7 +189,9 @@ def main():
     )
     parser.add_argument('origin', help='set origin.')
     parser.add_argument('destination', help='set destination.')
-    parser.add_argument('-b', '--bags', help='set number of bags (default: 0).', type=int, default=0)
+    parser.add_argument(
+        '-b', '--bags', help='set number of bags (default: 0).', type=int, default=0
+    )
 
     # Gather arguments for the search
     args = parser.parse_args()
@@ -224,7 +215,7 @@ def main():
         # Convert each Route to dict and dump json
         routes = [asdict(route) for route in routes]
         # Sort by total_price
-        routes_sorted = sorted(routes, key=lambda x:x['total_price'])
+        routes_sorted = sorted(routes, key=lambda x: x['total_price'])
         print(json.dumps(routes_sorted, default=str, indent=4))
     else:
         print(
