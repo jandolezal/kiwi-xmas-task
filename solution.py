@@ -200,7 +200,7 @@ def main():
     )
     parser.add_argument('origin', help='set origin.')
     parser.add_argument('destination', help='set destination.')
-    parser.add_argument('--bags', help='set number of bags.', type=int)
+    parser.add_argument('-b', '--bags', help='set number of bags (default: 0).', type=int, default=0)
 
     # Gather arguments for the search
     args = parser.parse_args()
@@ -223,10 +223,12 @@ def main():
 
         # Convert each Route to dict and dump json
         routes = [asdict(route) for route in routes]
-        print(json.dumps(routes, default=str, indent=4))
+        # Sort by total_price
+        routes_sorted = sorted(routes, key=lambda x:x['total_price'])
+        print(json.dumps(routes_sorted, default=str, indent=4))
     else:
         print(
-            f'There are no options for journey from {args.origin} to {args.destination}'
+            f'There are no options for such a journey from {args.origin} to {args.destination}'
         )
 
 
