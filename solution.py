@@ -1,3 +1,8 @@
+"""
+Solution for the entry task assignment for Python weekend in Prague, 10 – 12 December 2021.
+https://pythonweekend.cz/
+"""
+
 import argparse
 import copy
 import csv
@@ -10,6 +15,8 @@ from typing import List, Dict
 
 @dataclass
 class Flight:
+
+    """Represents single flight."""
 
     flight_no: str
     origin: str
@@ -32,6 +39,8 @@ class Flight:
 
 @dataclass
 class Route:
+
+    """Represents route from origin to destination with none or several connecting flights."""
 
     flights: List[Flight] = field(default_factory=List)
     bags_allowed: int = None
@@ -83,7 +92,15 @@ class Route:
         self.calculate_travel_time()
 
 
-def flights_from_csv(filepath: str = 'example/example0.csv') -> Dict[str, List[Flight]]:
+def flights_from_csv(filepath: str) -> List[Flight]:
+    """Load flights from a CSV file.
+
+    Args:
+        filepath (str): Filename of a CSV file.
+
+    Returns:
+        List[Flight]: List of flights
+    """
 
     all_flights = []
 
@@ -107,15 +124,37 @@ def flights_from_csv(filepath: str = 'example/example0.csv') -> Dict[str, List[F
     return all_flights
 
 
-def is_enough_time(arrival, departure):
-    return ((departure - arrival) / timedelta(hours=1) > 1) and (
-        (departure - arrival) / timedelta(hours=1) < 6
+def is_enough_time(arrival: datetime, departure: datetime) -> bool:
+    """Checks if there is enough time to catch a flight.
+
+    Args:
+        arrival (datetime): Date and time of the arrival to the airport.
+        departure (datetime): Date and time of the departure.
+
+    Returns:
+        bool: True if there is at least one hour or up to six hours for transfer (else False).
+    """
+    return ((departure - arrival) / timedelta(hours=1) >= 1) and (
+        (departure - arrival) / timedelta(hours=1) <= 6
     )
 
 
 def list_ok_flights(
     schedule: List[Flight], airport: str, incoming_route: Route, bags_count: int
-):
+) -> List[Flight]:
+    """List all possible flights which can be traveled from the current airport.
+
+    There is enough time to catch the flight and the bags constraint is met.
+
+    Args:
+        schedule (List[Flight]): Flights data.
+        airport (str): Current airport.
+        incoming_route (Route): Route with flights gathered so far.
+        bags_count (int): Number of bags constraint.
+
+    Returns:
+        List[Flight]: List of flights which can be taken.
+    """
     ok_flights = []
     outgoing = [flight for flight in schedule if flight.origin == airport]
     for out in outgoing:
@@ -135,6 +174,19 @@ def list_ok_flights(
 def gather_routes(
     schedule: List[Flight], start: str, end: str, incoming_route: Route, bags_count: int
 ) -> List[Route]:
+    """Recursively gather routes based on provide schedule, origin, destination and number of bags.
+
+    Some atributes need to be calculated only after all routes are gathered.
+    Args:
+        schedule (List[Flight]): Loaded flights from csv.
+        start (str): Origin
+        end (str): Destination
+        incoming_route (Route): Route with flights already taken.
+        bags_count (int): Number of bags.
+
+    Returns:
+        List[Route]: List of relevant raw routes (without calculated travel_time, bags_allowed and total_price)
+    """
 
     routes = []
 
@@ -181,16 +233,16 @@ def gather_routes(
 def main():
     parser = argparse.ArgumentParser(
         prog='kiwi-xmas-task',
-        description='finds all possible routes between origin and destination based on number of bags.',
+        description='finds all possible routes between origin and destination based on the number of bags.',
     )
 
     parser.add_argument(
         'filename', help='specify name of a CSV file which contains flights data.'
     )
-    parser.add_argument('origin', help='set origin.')
-    parser.add_argument('destination', help='set destination.')
+    parser.add_argument('origin', help='set origin (three letter code)')
+    parser.add_argument('destination', help='set destination (three letter code)')
     parser.add_argument(
-        '-b', '--bags', help='set number of bags (default: 0).', type=int, default=0
+        '-b', '--bags', help='set number of bags (default: 0)', type=int, default=0
     )
 
     # Gather arguments for the search
@@ -216,7 +268,13 @@ def main():
         routes = [asdict(route) for route in routes]
         # Sort by total_price
         routes_sorted = sorted(routes, key=lambda x: x['total_price'])
-        print(json.dumps(routes_sorted, default=str, indent=4))
+        print(
+            json.dumps(
+                routes_sorted,
+                indent=4,
+                default=lambda x: x.isoformat() if isinstance(x, datetime) else x,
+            )
+        )
     else:
         print(
             f'There are no options for such a journey from {args.origin} to {args.destination}'

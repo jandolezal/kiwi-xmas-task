@@ -119,7 +119,7 @@ class TestSolution(unittest.TestCase):
         self.assertTrue(is_enough_time(arrival, departure))
 
     def test_flights_from_csv(self):
-        flights = flights_from_csv()
+        flights = flights_from_csv('example0.csv')
         some_flight = Flight(
             flight_no='ZH214',
             origin='WIW',
