@@ -1,6 +1,9 @@
 """
 Solution for the entry task assignment for Python weekend in Prague, 10 – 12 December 2021.
 https://pythonweekend.cz/
+
+Description of the task
+https://github.com/kiwicom/python-weekend-xmas-task
 """
 
 import argparse
@@ -40,7 +43,7 @@ class Flight:
 @dataclass
 class Route:
 
-    """Represents route from origin to destination with none or several connecting flights."""
+    """Represents route from origin to destination with only one or several connecting flights."""
 
     flights: List[Flight] = field(default_factory=List)
     bags_allowed: int = None
@@ -73,6 +76,8 @@ class Route:
         self.total_price = total_base_price + total_bags_price
 
     def calculate_travel_time(self) -> None:
+        """Calculates travel_time for the whole route in the form HH:MM:SS.
+        """
         departure = self.flights[0].departure
         arrival = self.flights[-1].arrival
         td = arrival - departure
@@ -190,14 +195,14 @@ def gather_routes(
 
     routes = []
 
+    # First get a list of all flights which departure from current stop and meet constraints
     ok_flights = list_ok_flights(schedule, start, incoming_route, bags_count)
 
-    # One incoming route is multiplicated for each outgoing flight which is ok
-    # Ok means: airport not visited, there is enough time for transfer
+    # One incoming route is multiplicated for each possible flight
     for ok_flight in ok_flights:
         # This is the base condition. We reached the final destination.
         if ok_flight.destination == end:
-            # First ever call of this function does not have incoming route
+            # First call does not have incoming_route. We are at the beginning
             if incoming_route:
                 new_route = copy.deepcopy(incoming_route)
                 new_route.add_flight(ok_flight)
@@ -211,7 +216,9 @@ def gather_routes(
             routes.append(new_route)
         # Recursive option which explores routes with the (transit) destination as new start
         else:
+            # First call does not have incoming_route. We are at the beginning
             if incoming_route:
+                # Use deepcopy to make sure we have also new list of flights in the route
                 new_route = copy.deepcopy(incoming_route)
                 new_route.add_flight(ok_flight)
             else:
@@ -231,6 +238,7 @@ def gather_routes(
 
 
 def main():
+    # Prepare the CLI
     parser = argparse.ArgumentParser(
         prog='kiwi-xmas-task',
         description='finds all possible routes between origin and destination based on the number of bags.',
@@ -255,16 +263,21 @@ def main():
     if len(args.origin) != 3 or len(args.destination) != 3:
         print('Origin and destination should be tree letter codes.')
         sys.exit()
+    
+    # Key logic exploring all viable routes meeting the constraints
     routes = gather_routes(
         schedule, args.origin.upper(), args.destination.upper(), None, args.bags
     )
 
+    # Some processing is needed once we have a list of all the routes
+    # and each route number of flights is fixed
     # Calculate travel_time, total_price and bags_allowed
     if routes:
         for route in routes:
             route.calculate()
 
         # Convert each Route to dict and dump json
+        # Properly convert datetime objects to str
         routes = [asdict(route) for route in routes]
         # Sort by total_price
         routes_sorted = sorted(routes, key=lambda x: x['total_price'])

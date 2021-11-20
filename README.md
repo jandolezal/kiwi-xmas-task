@@ -1,8 +1,9 @@
 # Solution to Python weekend entry task
 
-Solution for the entry task assignment for Python weekend in Prague, 10 – 12 December 2021.
+Solution for the [entry task assignment](https://github.com/kiwicom/python-weekend-xmas-task
+) for the Python weekend in Prague, 10 – 12 December 2021.
 
-The solution is in one module `solution.py` and should work in Python >=3.7.
+The solution is in one module `solution.py` and should work in Python >=3.7. 
 
 From the additional options, `--bags` is implemented.
 
@@ -34,6 +35,6 @@ Example usage with one of the provided flights dataset.
 
 ## Test
 
-There are only few tests covering couple of helper functions, but not the main logic of finding the routes.
+Currently, there are only few tests covering couple of helper functions, but not the main logic of finding the routes.
 
 `python3 -m unittest test_solution.py`
